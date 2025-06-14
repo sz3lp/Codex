@@ -1,12 +1,20 @@
 import OpenAI from 'openai';
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const apiKey = process.env.OPENAI_API_KEY;
+if (!apiKey) {
+  console.warn('OPENAI_API_KEY not set');
+}
+const openai = new OpenAI({ apiKey });
 
 const history = [];
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
+  }
+
+  if (!apiKey) {
+    return res.status(500).json({ error: 'OPENAI_API_KEY not set' });
   }
 
   const { prompt } = req.body;
