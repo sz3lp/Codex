@@ -15,18 +15,3 @@ Each directory has its own README with setup instructions. The backend exposes J
    ```bash
    cd backend
    uvicorn app.main:app --reload
-   ```
-
-3. Start the frontend:
-
-   ```bash
-   cd ../frontend
-   npm install
-   npm run dev
-   ```
-
-Deploy the `frontend` directory to Vercel (set the project root to `frontend` when creating the project) and host the FastAPI backend separately.
-The included `vercel.json` rewrites `/api/*` calls to `localhost:8000` for local development.
-
-The frontend includes a sample `/prompt` page demonstrating Tailwind CSS and
-client-server interaction.
