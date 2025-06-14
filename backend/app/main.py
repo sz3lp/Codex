@@ -33,6 +33,10 @@ class Token(BaseModel):
 class TokenData(BaseModel):
     email: str | None = None
 
+class UserCreate(BaseModel):
+    email: str
+    password: str
+
 def create_access_token(data: dict, expires_delta: timedelta | None = None):
     to_encode = data.copy()
     if expires_delta:
@@ -64,6 +68,19 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends()):
         data={"sub": user.email}, expires_delta=access_token_expires
     )
     return {"access_token": access_token, "token_type": "bearer"}
+
+@app.post("/register")
+async def register(user: UserCreate):
+    db = SessionLocal()
+    existing = db.query(User).filter(User.email == user.email).first()
+    if existing:
+        raise HTTPException(status_code=400, detail="Email already registered")
+    hashed_pw = pwd_context.hash(user.password)
+    new_user = User(email=user.email, hashed_password=hashed_pw)
+    db.add(new_user)
+    db.commit()
+    db.refresh(new_user)
+    return {"id": new_user.id, "email": new_user.email}
 
 @app.get("/health")
 async def health():

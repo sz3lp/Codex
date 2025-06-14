@@ -9,6 +9,10 @@ npm run dev
 
 Deploy by pushing the `frontend` directory to Vercel.
 
+The app expects the FastAPI backend to be running separately and accessible via
+`NEXT_PUBLIC_API_URL` defined in your `.env` file. During local development the
+proxy in `vercel.json` can be used to forward API requests.
+
 ## Environment Variables
 See `.env.example` for required variables.
 g52nvo-codex/create-saas-scaffold-with-next.js-and-fastapi
