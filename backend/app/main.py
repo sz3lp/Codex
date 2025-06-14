@@ -15,7 +15,11 @@ from dotenv import load_dotenv
 load_dotenv()
 
 DATABASE_URL = os.getenv("DATABASE_URL")
-SECRET_KEY = os.getenv("SECRET_KEY", "secret")
+SECRET_KEY = os.getenv("SECRET_KEY")
+if not DATABASE_URL:
+    raise RuntimeError("DATABASE_URL not set")
+if not SECRET_KEY:
+    raise RuntimeError("SECRET_KEY not configured")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
@@ -58,9 +62,10 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None):
 # FastAPI app init
 app = FastAPI()
 
+allowed_origins = os.getenv("FRONTEND_ORIGINS", "http://localhost:3000").split(",")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
