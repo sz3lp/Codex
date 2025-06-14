@@ -8,12 +8,21 @@ from datetime import datetime, timedelta
 import sqlalchemy as sa
 from sqlalchemy.orm import sessionmaker, declarative_base
 import os
+import stripe
+from dotenv import load_dotenv
+
+# Load environment
+load_dotenv()
 
 DATABASE_URL = os.getenv("DATABASE_URL")
 SECRET_KEY = os.getenv("SECRET_KEY", "secret")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
+# Stripe config
+stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
+
+# Database setup
 engine = sa.create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
@@ -33,6 +42,10 @@ class Token(BaseModel):
 class TokenData(BaseModel):
     email: str | None = None
 
+class UserCreate(BaseModel):
+    email: str
+    password: str
+
 def create_access_token(data: dict, expires_delta: timedelta | None = None):
     to_encode = data.copy()
     if expires_delta:
@@ -40,9 +53,9 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None):
     else:
         expire = datetime.utcnow() + timedelta(minutes=15)
     to_encode.update({"exp": expire})
-    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
-    return encoded_jwt
+    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
+# FastAPI app init
 app = FastAPI()
 
 app.add_middleware(
@@ -60,19 +73,25 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends()):
     if not user or not pwd_context.verify(form_data.password, user.hashed_password):
         raise HTTPException(status_code=400, detail="Incorrect username or password")
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    access_token = create_access_token(
-        data={"sub": user.email}, expires_delta=access_token_expires
-    )
+    access_token = create_access_token(data={"sub": user.email}, expires_delta=access_token_expires)
     return {"access_token": access_token, "token_type": "bearer"}
+
+@app.post("/register")
+async def register(user: UserCreate):
+    db = SessionLocal()
+    existing = db.query(User).filter(User.email == user.email).first()
+    if existing:
+        raise HTTPException(status_code=400, detail="Email already registered")
+    hashed_pw = pwd_context.hash(user.password)
+    new_user = User(email=user.email, hashed_password=hashed_pw)
+    db.add(new_user)
+    db.commit()
+    db.refresh(new_user)
+    return {"id": new_user.id, "email": new_user.email}
 
 @app.get("/health")
 async def health():
     return {"status": "ok"}
-import stripe
-from dotenv import load_dotenv
-
-load_dotenv()
-stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
 
 @app.post("/create-checkout-session")
 async def create_checkout_session():
@@ -85,5 +104,5 @@ async def create_checkout_session():
     )
     return {"id": session.id}
 
+# Create DB tables
 Base.metadata.create_all(bind=engine)
-

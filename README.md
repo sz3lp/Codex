@@ -5,11 +5,13 @@ This repository contains a minimal SaaS scaffold with a Next.js frontend and a F
 - **frontend/** – Next.js application
 - **backend/** – FastAPI application
 
-Each directory has its own README with setup instructions.
-g52nvo-codex/create-saas-scaffold-with-next.js-and-fastapi
+Each directory has its own README with setup instructions. The backend exposes JWT auth endpoints and Stripe billing examples while the frontend demonstrates a prompt engine page built with Tailwind CSS.
 
-The frontend includes a sample `/prompt` page demonstrating Tailwind CSS and
-client-server interaction.
-======
+## Quick start
 
-main
+1. Configure PostgreSQL and create `.env` files using the provided examples in `frontend` and `backend`.
+2. Start the backend:
+
+   ```bash
+   cd backend
+   uvicorn app.main:app --reload
