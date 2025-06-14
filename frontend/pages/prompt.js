@@ -3,15 +3,24 @@ import { useState } from 'react';
 export default function PromptPage() {
   const [prompt, setPrompt] = useState('');
   const [output, setOutput] = useState('');
+  const [history, setHistory] = useState([]);
 
   const handleGenerate = async () => {
-    const res = await fetch('/api/generate', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ prompt }),
-    });
-    const data = await res.json();
-    setOutput(data.result);
+    try {
+      const res = await fetch('/api/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'Request failed');
+      }
+      setOutput(data.result);
+      setHistory(data.history || []);
+    } catch (err) {
+      setOutput(`Error: ${err.message}`);
+    }
   };
 
   return (
@@ -31,7 +40,15 @@ export default function PromptPage() {
             Generate
           </button>
         </div>
-        <pre className="border border-gray-300 p-4 font-mono whitespace-pre-wrap">{output}</pre>
+        <pre className="border border-gray-300 p-4 font-mono whitespace-pre-wrap text-center">{output}</pre>
+        <div className="space-y-4">
+          {history.map((item, idx) => (
+            <div key={idx} className="border rounded p-4 font-mono">
+              <p><span className="font-bold">Prompt:</span> {item.prompt}</p>
+              <p className="mt-2 whitespace-pre-wrap"><span className="font-bold">Response:</span> {item.result}</p>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
